@@ -1,6 +1,6 @@
 # Scenarios — @eslint/v9-to-v10-custom-rules (PR #8)
 
-All scenarios validated against files in `custom-rules/`.
+All 30 scenarios validated against files in `custom-rules/`.
 Verify by running the codemod and inspecting `git diff custom-rules/`.
 
 ---
@@ -112,19 +112,24 @@ File: `custom-rules/context-nested.js`
 
 ---
 
-## Potential Failure — Chained context + sourceCode deprecated methods
+## Transform 9 — context.getSourceCode() chained with deprecated sourceCode methods
 
+Scripts: `replace-context-methods.ts` then `replace-sourcecode-methods.ts`
 File: `custom-rules/sourcecode-context-chained.js`
-Run manually and inspect `git diff custom-rules/sourcecode-context-chained.js`.
 
-| # | Scenario | Expected behavior |
-|---|---|---|
-| 28 | `context.getSourceCode().getTokenOrCommentBefore(node)` | **Partial transform only** — Step 1 converts `getSourceCode()` to `sourceCode`, but Step 2 misses the resulting `context.sourceCode.getTokenOrCommentBefore(node)` |
+Both scripts must run sequentially. Step 1 transforms `getSourceCode()`, step 2 transforms the resulting deprecated sourceCode method call.
 
-**Root cause:** `replace-sourcecode-methods.ts` selector `has { member_expression has { property_identifier } }` only matches a **single-level** member expression (e.g. `sourceCode.method()`). When the member expression is double-level (`context.sourceCode.method()`), the nested inner member expression is checked first and does not have the deprecated property — so the selector does not fire.
+| # | Before (after Step 1 → after Step 2) | Final result | Result |
+|---|---|---|---|
+| 28 | `context.getSourceCode().getTokenOrCommentBefore(node)` → `ctx.sourceCode.getTokenOrCommentBefore(node)` → | `ctx.sourceCode.getTokenBefore(node, { includeComments: true })` | PASS |
+| 29 | `context.getSourceCode().getTokenOrCommentAfter(node)` | `ctx.sourceCode.getTokenAfter(node, { includeComments: true })` | PASS |
+| 30 | `context.getSourceCode().isSpaceBetweenTokens(x, y)` | `ctx.sourceCode.isSpaceBetween(x, y)` | PASS |
 
-**Workaround:** assign `context.getSourceCode()` to a variable first, then the deprecated method call is a single-level member expression that Step 2 handles correctly.
+> **Fix note:** Step 2 was previously broken for this pattern. `find()` used DFS and returned
+> the inner `ctx.sourceCode` member expression first, extracting `"sourceCode"` as the method
+> name and skipping the transform. Fixed by replacing `find()` with `children()` to always
+> get the direct callee and its direct property.
 
 ---
 
-**Total: 27 PASS, 1 partial failure (known codemod limitation)**
+**Total: 30 scenarios — 30 PASS**

@@ -1,21 +1,22 @@
 /**
- * PR#8 potential failure: context.getSourceCode() chained with deprecated sourceCode methods.
+ * PR#8 scenario: context.getSourceCode() chained directly with deprecated sourceCode methods.
  *
- * Step 1 (replace-context-methods.ts) correctly transforms context.getSourceCode():
+ * When both scripts run sequentially:
+ *   Step 1 (replace-context-methods.ts):
+ *     context.getSourceCode().getTokenOrCommentBefore(node)
+ *       -> context.sourceCode.getTokenOrCommentBefore(node)
+ *
+ *   Step 2 (replace-sourcecode-methods.ts):
+ *     context.sourceCode.getTokenOrCommentBefore(node)
+ *       -> context.sourceCode.getTokenBefore(node, { includeComments: true })
+ *
+ * Final result after both steps:
  *   context.getSourceCode().getTokenOrCommentBefore(node)
- *     -> context.sourceCode.getTokenOrCommentBefore(node)
+ *     -> context.sourceCode.getTokenBefore(node, { includeComments: true })
  *
- * BUT Step 2 (replace-sourcecode-methods.ts) then MISSES the result.
- *
- * Root cause: the selector matches `call_expression has { member_expression has { property_identifier } }`.
- * When the member expression is double-level (context.sourceCode.getMethod), the inner nested
- * member_expression (context.sourceCode) is found first and it does not have the deprecated
- * property — so the selector does not fire.
- *
- * Workaround: assign getSourceCode() to a variable first, then call the deprecated method on it.
- * That produces a single-level member expression which Step 2 correctly transforms.
- *
- * Run manually and inspect git diff to observe the partial transform.
+ * Note: Step 2 uses children() instead of find() to get the direct callee
+ * member_expression. find() uses DFS and would return the inner ctx.sourceCode
+ * node first, extracting "sourceCode" as the method name and skipping the transform.
  */
 'use strict'
 
