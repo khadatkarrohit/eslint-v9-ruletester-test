@@ -1,71 +1,29 @@
-# eslint-v9-ruletester-test
+# eslint-codemod-test-fixtures
 
-A test-target repository for the [`@eslint/v9-to-v10-ruletester`](https://github.com/codemod-com/codemod/tree/main/codemods/v10/ruletester) codemod.
+Test-target repo for two ESLint v9-to-v10 codemods.
 
-The test files contain real-world RuleTester patterns from ESLint v8/v9 codebases
-that break in v9+ or v10. Running the codemod against this repo removes all those
-patterns and makes the test suite green.
-
-See [SCENARIOS.md](./SCENARIOS.md) for a full list of the 35 scenarios covered.
+- **PR#9** `@eslint/v9-to-v10-ruletester` → see [SCENARIOS-ruletester.md](./SCENARIOS-ruletester.md)
+- **PR#8** `@eslint/v9-to-v10-custom-rules` → see [SCENARIOS-custom-rules.md](./SCENARIOS-custom-rules.md)
 
 ---
 
-## What the codemod removes
-
-| Pattern | Where | Breaks in |
-|---|---|---|
-| `errors` / `output` on a `valid` test case | `tests/valid-cases.test.js` | ESLint v10 |
-| Top-level `type` on an `invalid` test case | `tests/invalid-cases.test.js`, `tests/combined.test.js`, `tests/typescript.test.ts` | ESLint v9+ (flat config) |
-
----
-
-## Prerequisites
-
-- Node.js 18+
-- npm or npx available
-
----
-
-## How to test the codemod step by step
-
-### Step 1 — Clone and install
+## Get started
 
 ```bash
-git clone https://github.com/rohitkhadatkar/eslint-v9-ruletester-test.git
+git clone https://github.com/khadatkarrohit/eslint-v9-ruletester-test.git
 cd eslint-v9-ruletester-test
 npm install
 ```
 
-### Step 2 — Run tests before the codemod (expected to fail)
+---
+
+## Test PR#9 — RuleTester migration
 
 ```bash
+# 1. Run ALL scenarios before codemod — will FAIL (expected)
 npm test
-```
 
-Expected output:
-
-```
-valid-cases tests passed
-ConfigError: ESLint configuration in rule-tester is invalid:
-  Config (unnamed): Unexpected key "type" found.
-```
-
-`valid-cases.test.js` passes because ESLint v9 silently ignores `errors`/`output`
-in valid cases. Everything after that fails because top-level `type` in invalid
-cases throws a `ConfigError` in v9's flat-config RuleTester.
-
-### Step 3 — Run the codemod
-
-**Option A — Once the codemod is published to the registry:**
-
-```bash
-npx codemod @eslint/v9-to-v10-ruletester
-```
-
-**Option B — Run locally from the codemods source repo:**
-
-```bash
-# From the root of codemod-com/codemod repo
+# 2. Run codemod from source (inside the codemods repo)
 npx codemod jssg run --language javascript --allow-dirty \
   --target /path/to/eslint-v9-ruletester-test \
   ./codemods/v10/ruletester/scripts/cleanup-valid-cases.ts
@@ -73,72 +31,105 @@ npx codemod jssg run --language javascript --allow-dirty \
 npx codemod jssg run --language javascript --allow-dirty \
   --target /path/to/eslint-v9-ruletester-test \
   ./codemods/v10/ruletester/scripts/cleanup-invalid-cases.ts
-```
 
-### Step 4 — Inspect the diff
-
-```bash
-git diff
-```
-
-You should see:
-- `errors: []` / `output: null` removed from all `valid` test case objects
-- Top-level `type: '...'` removed from all `invalid` test case objects
-- `type` inside `errors[i]` objects **untouched**
-
-### Step 5 — Run tests after the codemod (all should pass)
-
-```bash
+# 3. Run ALL scenarios after codemod — all should pass
 npm test
-```
-
-Expected output:
-
-```
-valid-cases tests passed
-invalid-cases tests passed
-combined tests passed
-```
-
-### Step 6 — TypeScript file (optional)
-
-```bash
 npm run test:ts
 ```
 
-Expected output:
+`npm test` covers **all 32 scenarios** across 3 files at once:
 
-```
-typescript tests passed
-```
+| Command | File | Scenarios covered |
+|---|---|---|
+| `node tests/valid-cases.test.js` | `tests/valid-cases.test.js` | 19 — errors/output removal |
+| `node tests/invalid-cases.test.js` | `tests/invalid-cases.test.js` | 8 — type removal |
+| `node tests/combined.test.js` | `tests/combined.test.js` | 4 structural + both transforms |
+| `npm run test:ts` | `tests/typescript.test.ts` | 1 TypeScript file |
 
-### Step 7 — Inspect potential failure edge cases (optional)
-
-These cases are NOT part of `npm test`. They document codemod limitations.
+To run a **specific scenario file** individually:
 
 ```bash
-# First restore the original file, then run:
-git checkout tests/potential-failures.test.js
-node tests/potential-failures.test.js
-git diff tests/potential-failures.test.js
+node tests/valid-cases.test.js
+node tests/invalid-cases.test.js
+node tests/combined.test.js
 ```
 
-See [SCENARIOS.md](./SCENARIOS.md) for what to expect.
+### Reset and retest PR#9
+
+After the codemod runs it modifies the `tests/` files. To restore them to the original pre-codemod state and retest from scratch:
+
+```bash
+# Reset ALL test files
+git checkout tests/
+
+# Reset a specific scenario file only
+git checkout tests/valid-cases.test.js
+git checkout tests/invalid-cases.test.js
+git checkout tests/combined.test.js
+git checkout tests/typescript.test.ts
+git checkout tests/potential-failures.test.js
+```
+
+Then repeat from Step 1.
 
 ---
 
-## File structure
+## Test PR#8 — Custom rules migration
 
+```bash
+# 1. Run codemod from source (inside the codemods repo)
+npx codemod jssg run --language javascript --allow-dirty \
+  --target /path/to/eslint-v9-ruletester-test \
+  ./codemods/v10/custom-rules/scripts/replace-context-methods.ts
+
+npx codemod jssg run --language javascript --allow-dirty \
+  --target /path/to/eslint-v9-ruletester-test \
+  ./codemods/v10/custom-rules/scripts/replace-sourcecode-methods.ts
+
+# 2. Inspect ALL transformed files at once
+git diff custom-rules/
+
+# 3. Check TODO comments that need manual action
+grep -rn "TODO" custom-rules/
 ```
-rules/
-  no-console.js          Simple rule: disallows console.* calls
-  no-eval.js             Simple rule: disallows eval() calls
-  no-var.js              Simple rule: disallows var declarations
-tests/
-  valid-cases.test.js    19 scenarios for errors/output removal from valid cases
-  invalid-cases.test.js  8 scenarios for top-level type removal from invalid cases
-  combined.test.js       Structural: multiple runs, variables, inline tester, two rules
-  typescript.test.ts     Same patterns in a .ts file
-  potential-failures.test.js  Edge cases that expose codemod limitations (not in npm test)
-SCENARIOS.md             Full scenario list with expected behavior
+
+The codemod runs against **all 6 files** and covers **all 20 scenarios** in one pass.
+To inspect or test a **specific scenario file** individually:
+
+```bash
+# Inspect one file's diff
+git diff custom-rules/context-methods.js
+git diff custom-rules/context-fallback.js
+git diff custom-rules/context-no-replacement.js
+git diff custom-rules/sourcecode-basic.js
+git diff custom-rules/sourcecode-skip-arg.js
+git diff custom-rules/sourcecode-chained.js
 ```
+
+| File | Script | Scenarios |
+|---|---|---|
+| `context-methods.js` | `replace-context-methods.ts` | 1–6 — context method → property |
+| `context-fallback.js` | `replace-context-methods.ts` | 7–10 — nullish fallback cleanup |
+| `context-no-replacement.js` | `replace-context-methods.ts` | 11–12 — parserPath TODO |
+| `sourcecode-basic.js` | `replace-sourcecode-methods.ts` | 13–16 — basic SourceCode methods |
+| `sourcecode-skip-arg.js` | `replace-sourcecode-methods.ts` | 17–18 — skip argument |
+| `sourcecode-chained.js` | `replace-sourcecode-methods.ts` | 19–20 — chained access |
+
+### Reset and retest PR#8
+
+After the codemod runs it modifies the `custom-rules/` files. To restore them to the original pre-codemod state and retest from scratch:
+
+```bash
+# Reset ALL custom-rules files
+git checkout custom-rules/
+
+# Reset a specific scenario file only
+git checkout custom-rules/context-methods.js
+git checkout custom-rules/context-fallback.js
+git checkout custom-rules/context-no-replacement.js
+git checkout custom-rules/sourcecode-basic.js
+git checkout custom-rules/sourcecode-skip-arg.js
+git checkout custom-rules/sourcecode-chained.js
+```
+
+Then repeat from Step 1.

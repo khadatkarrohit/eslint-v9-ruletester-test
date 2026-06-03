@@ -1,7 +1,7 @@
 {
-  "name": "eslint-plugin-test-migration",
+  "name": "eslint-codemod-test-fixtures",
   "version": "1.0.0",
-  "description": "Test target for @eslint/v9-to-v10-ruletester codemod — contains v8/v9-era RuleTester patterns",
+  "description": "Test target for @eslint/v9-to-v10-ruletester (PR#9) and @eslint/v9-to-v10-custom-rules (PR#8) codemods",
   "private": true,
   "scripts": {
     "test": "node tests/valid-cases.test.js && node tests/invalid-cases.test.js && node tests/combined.test.js",

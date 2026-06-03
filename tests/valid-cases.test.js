@@ -81,7 +81,7 @@ ruleTester.run('no-eval', rule, {
   ],
 
   invalid: [
-    // clean - no type prop, must not be changed
+    // --- no-transform: no type prop ---
     { code: 'eval(x)', errors: [{ message: 'eval() is not allowed.' }] },
   ],
 })

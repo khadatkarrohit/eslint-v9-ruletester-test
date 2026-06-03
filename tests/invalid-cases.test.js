@@ -26,6 +26,11 @@ ruleTester.run('no-eval', rule, {
     // --- no-transform: no type prop at all ---
     { code: 'eval(a)', errors: [{ message: 'eval() is not allowed.' }] },
 
+    // --- no-transform: output in INVALID case must NOT be removed ---
+    // output: null means no autofix is expected; cleanup-valid-cases.ts is scoped to the
+    // valid array only and must never touch output in invalid cases.
+    { code: 'eval(a2)', errors: [{ message: 'eval() is not allowed.' }], output: null },
+
     // --- no-transform: type ONLY inside errors[i] (must NOT be removed) ---
     { code: 'eval(b)', errors: [{ message: 'eval() is not allowed.', type: 'CallExpression' }] },
 
