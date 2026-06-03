@@ -1,0 +1,15 @@
+{
+  "name": "eslint-plugin-test-migration",
+  "version": "1.0.0",
+  "description": "Test target for @eslint/v9-to-v10-ruletester codemod — contains v8/v9-era RuleTester patterns",
+  "private": true,
+  "scripts": {
+    "test": "node tests/valid-cases.test.js && node tests/invalid-cases.test.js && node tests/combined.test.js",
+    "test:ts": "npx tsx tests/typescript.test.ts",
+    "test:potential-failures": "node tests/potential-failures.test.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "tsx": "^4.0.0"
+  }
+}
